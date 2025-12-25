@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat App</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="chat-container">
+    <h1>Chat App</h1>
+    <button id="google-signin" style="display: block;">Sign in with Google</button>
+    <button id="logout" style="display: none;">Logout</button>
+    <ul id="messages" style="display: none;"></ul>
+    <form id="message-form" style="display: none;">
+      <input type="text" id="message-input" placeholder="Type your message..." required>
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-auth-compat.js"></script> <!-- Add this for Auth -->
+  <script src="script.js"></script>
+</body>
+</html>
