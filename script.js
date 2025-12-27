@@ -1,237 +1,121 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #000;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
+// Your Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCGVQc5OP4k9AXlkK6Ld98yvBmODuc0d60",
+  authDomain: "chatapp-5afff.firebaseapp.com",
+  databaseURL: "https://chatapp-5afff-default-rtdb.europe-west1.firebasedatabase.app/",
+  projectId: "chatapp-5afff",
+  storageBucket: "chatapp-5afff.firebasestorage.app",
+  messagingSenderId: "835710769608",
+  appId: "1:835710769608:web:ae974aeab8745fdea848fd",
+  measurementId: "G-V6BH65CXV5"
+};
 
-header {
-  background: #007bff;
-  text-align: center;
-  padding: 15px;
-}
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const database = firebase.database();
 
-header h1 {
-  margin: 0;
-  font-size: 1.8em;
-}
+// Reference to the 'messages' node
+const messagesRef = database.ref("messages");
 
-.main-container {
-  flex: 1;
-  padding: 10px;
-}
+// Google Sign-In Provider
+const provider = new firebase.auth.GoogleAuthProvider();
 
-.video-section {
-  width: 100%;
-}
+// Elements
+const signInButton = document.getElementById("google-signin");
+const logoutButton = document.getElementById("logout");
+const messagesList = document.getElementById("messages");
+const messageForm = document.getElementById("message-form");
+const messageInput = document.getElementById("message-input");
 
-.video-container {
-  position: relative;
-  width: 100%;
-  padding-bottom: 80%; /* Tall immersive ratio for mobile */
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 20px;
-}
+// Handle Sign-In
+signInButton.addEventListener("click", () => {
+  auth.signInWithPopup(provider)
+    .then((result) => {
+      console.log("Signed in:", result.user.displayName);
+    })
+    .catch((error) => {
+      console.error("Sign-in error:", error);
+    });
+});
 
-.video-wrapper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
+// Handle Logout
+logoutButton.addEventListener("click", () => {
+  auth.signOut()
+    .then(() => {
+      console.log("Signed out");
+    })
+    .catch((error) => {
+      console.error("Sign-out error:", error);
+    });
+});
 
-.video-wrapper iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
+// Listen for auth state changes
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    // User is signed in
+    signInButton.style.display = "none";
+    logoutButton.style.display = "block";
+    messagesList.style.display = "block";
+    messageForm.style.display = "flex";
 
-.chat-overlay {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  width: 300px;
-  max-height: 70%;
-  display: flex;
-  flex-direction: column;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
+    // Send message on form submit
+    messageForm.addEventListener("submit", sendMessage); // Attach listener only once
 
-.chat-overlay.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
+    // Listen for messages
+    messagesRef.on("child_added", addMessageToUI);
+  } else {
+    // User is signed out
+    signInButton.style.display = "block";
+    logoutButton.style.display = "none";
+    messagesList.style.display = "none";
+    messageForm.style.display = "none";
 
-#messages {
-  flex: 1;
-  list-style: none;
-  padding: 10px;
-  margin: 0 0 10px 0;
-  overflow-y: auto;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 8px;
-  max-height: calc(70% - 60px);
-}
-
-#messages li {
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  color: #fff;
-  font-size: 0.9em;
-  backdrop-filter: blur(4px);
-  word-wrap: break-word;
-}
-
-#message-form {
-  display: flex;
-}
-
-#message-input {
-  flex: 1;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 20px 0 0 20px;
-  color: white;
-  font-size: 0.95em;
-}
-
-#message-form button {
-  padding: 10px 15px;
-  background: #007bff;
-  border: none;
-  border-radius: 0 20px 20px 0;
-  color: white;
-  font-size: 0.95em;
-}
-
-.stream-tip {
-  text-align: center;
-  margin: 15px 0;
-  padding: 10px;
-  background: rgba(255, 165, 0, 0.2);
-  border: 1px solid #ff9800;
-  border-radius: 8px;
-  font-weight: bold;
-}
-
-.chat-prompt {
-  text-align: center;
-  margin: 20px 0;
-  font-size: 1.1em;
-  font-weight: bold;
-}
-
-.google-signin-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-  max-width: 400px;
-  margin: 0 auto 15px auto;
-  height: 50px;
-  background: #fff;
-  color: #757575;
-  font-size: 16px;
-  font-weight: 500;
-  border: none;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  cursor: pointer;
-}
-
-.google-signin-btn:hover {
-  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-}
-
-.logout-btn {
-  display: none;
-  width: 100%;
-  max-width: 400px;
-  margin: 0 auto 20px auto;
-  padding: 12px;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
-}
-
-.alternative-links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin: 20px 0;
-}
-
-.alt-button {
-  padding: 12px 20px;
-  background: #28a745;
-  color: white;
-  text-decoration: none;
-  border-radius: 8px;
-  font-size: 1em;
-  min-width: 100px;
-  text-align: center;
-}
-
-.alt-button:hover {
-  background: #218838;
-}
-
-footer {
-  background: #111;
-  text-align: center;
-  padding: 15px;
-  font-size: 0.9em;
-}
-
-footer a {
-  color: #aaa;
-  text-decoration: none;
-}
-
-/* Desktop Adjustments */
-@media (min-width: 769px) {
-  .video-container {
-    max-width: 80%;
-    margin: 0 auto 30px auto;
-    padding-bottom: 55%; /* Moderate 16:9-ish height */
+    // Clear messages and remove listeners
+    messagesList.innerHTML = "";
+    messagesRef.off("child_added", addMessageToUI);
+    messageForm.removeEventListener("submit", sendMessage);
   }
+});
 
-  .chat-overlay {
-    width: 350px;
-    left: 20px;
-    bottom: 20px;
-  }
-
-  .stream-tip, .chat-prompt, .google-signin-btn, .logout-btn, .alternative-links {
-    max-width: 80%;
-    margin-left: auto;
-    margin-right: auto;
+// Function to send message
+function sendMessage(e) {
+  e.preventDefault();
+  const message = messageInput.value.trim();
+  if (message) {
+    const user = auth.currentUser;
+    messagesRef.push({
+      username: user.displayName,
+      uid: user.uid, // Add UID for security
+      message: message,
+      timestamp: Date.now()
+    });
+    messageInput.value = "";
   }
 }
 
-/* Mobile Fallback for Overlay */
-@media (max-width: 768px) {
-  .chat-overlay {
-    position: static;
-    width: 100%;
-    max-height: none;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.7);
-    opacity: 1; /* Always visible on small screens if signed in */
-  }
+// Function to add message to UI
+function addMessageToUI(snapshot) {
+  const data = snapshot.val();
+  const messageElement = document.createElement("li");
+  messageElement.textContent = `${data.username}: ${data.message}`;
+  messagesList.appendChild(messageElement);
+  messagesList.scrollTop = messagesList.scrollHeight;
+}
+
+const chatOverlay = document.getElementById('chat-overlay');
+
+if (user) {
+  // ... existing code for showing logout, etc.
+  chatOverlay.classList.add('visible');
+  // Hide sign-in prompt and button
+  document.querySelector('.chat-prompt').style.display = 'none';
+  document.getElementById('google-signin').style.display = 'none';
+  document.getElementById('logout').style.display = 'block';
+} else {
+  chatOverlay.classList.remove('visible');
+  // Show sign-in elements
+  document.querySelector('.chat-prompt').style.display = 'block';
+  document.getElementById('google-signin').style.display = 'flex';
+  document.getElementById('logout').style.display = 'none';
 }
