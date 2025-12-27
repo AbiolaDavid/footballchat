@@ -21,12 +21,14 @@ const messagesRef = database.ref("messages");
 // Google Sign-In Provider
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// Elements
+// DOM Elements
 const signInButton = document.getElementById("google-signin");
 const logoutButton = document.getElementById("logout");
 const messagesList = document.getElementById("messages");
 const messageForm = document.getElementById("message-form");
 const messageInput = document.getElementById("message-input");
+const chatOverlay = document.getElementById("chat-overlay");
+const chatPrompt = document.querySelector(".chat-prompt");
 
 // Handle Sign-In
 signInButton.addEventListener("click", () => {
@@ -36,6 +38,7 @@ signInButton.addEventListener("click", () => {
     })
     .catch((error) => {
       console.error("Sign-in error:", error);
+      alert("Sign-in failed. Please try again.");
     });
 });
 
@@ -43,50 +46,21 @@ signInButton.addEventListener("click", () => {
 logoutButton.addEventListener("click", () => {
   auth.signOut()
     .then(() => {
-      console.log("Signed out");
+      console.log("Signed out successfully");
     })
     .catch((error) => {
       console.error("Sign-out error:", error);
     });
 });
 
-// Listen for auth state changes
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    // User is signed in
-    signInButton.style.display = "none";
-    logoutButton.style.display = "block";
-    messagesList.style.display = "block";
-    messageForm.style.display = "flex";
-
-    // Send message on form submit
-    messageForm.addEventListener("submit", sendMessage); // Attach listener only once
-
-    // Listen for messages
-    messagesRef.on("child_added", addMessageToUI);
-  } else {
-    // User is signed out
-    signInButton.style.display = "block";
-    logoutButton.style.display = "none";
-    messagesList.style.display = "none";
-    messageForm.style.display = "none";
-
-    // Clear messages and remove listeners
-    messagesList.innerHTML = "";
-    messagesRef.off("child_added", addMessageToUI);
-    messageForm.removeEventListener("submit", sendMessage);
-  }
-});
-
-// Function to send message
+// Send message function
 function sendMessage(e) {
   e.preventDefault();
   const message = messageInput.value.trim();
-  if (message) {
-    const user = auth.currentUser;
+  if (message && auth.currentUser) {
     messagesRef.push({
-      username: user.displayName,
-      uid: user.uid, // Add UID for security
+      username: auth.currentUser.displayName || "Anonymous",
+      uid: auth.currentUser.uid,
       message: message,
       timestamp: Date.now()
     });
@@ -94,28 +68,46 @@ function sendMessage(e) {
   }
 }
 
-// Function to add message to UI
+// Add message to UI
 function addMessageToUI(snapshot) {
   const data = snapshot.val();
   const messageElement = document.createElement("li");
   messageElement.textContent = `${data.username}: ${data.message}`;
   messagesList.appendChild(messageElement);
+  
+  // Auto-scroll to latest message
   messagesList.scrollTop = messagesList.scrollHeight;
 }
 
-const chatOverlay = document.getElementById('chat-overlay');
+// Listen for auth state changes
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    // User is signed in
+    signInButton.style.display = "none";
+    logoutButton.style.display = "block";
+    chatPrompt.style.display = "none";
+    
+    // Show and activate chat overlay
+    chatOverlay.classList.add("visible");
 
-if (user) {
-  // ... existing code for showing logout, etc.
-  chatOverlay.classList.add('visible');
-  // Hide sign-in prompt and button
-  document.querySelector('.chat-prompt').style.display = 'none';
-  document.getElementById('google-signin').style.display = 'none';
-  document.getElementById('logout').style.display = 'block';
-} else {
-  chatOverlay.classList.remove('visible');
-  // Show sign-in elements
-  document.querySelector('.chat-prompt').style.display = 'block';
-  document.getElementById('google-signin').style.display = 'flex';
-  document.getElementById('logout').style.display = 'none';
-}
+    // Attach event listeners (only once)
+    messageForm.addEventListener("submit", sendMessage);
+    messagesRef.on("child_added", addMessageToUI);
+
+  } else {
+    // User is signed out
+    signInButton.style.display = "flex";  // flex to match button's internal layout
+    logoutButton.style.display = "none";
+    chatPrompt.style.display = "block";
+    
+    // Hide and deactivate chat overlay
+    chatOverlay.classList.remove("visible");
+
+    // Clear messages
+    messagesList.innerHTML = "";
+
+    // Remove listeners to prevent duplicates/memory leaks
+    messagesRef.off("child_added", addMessageToUI);
+    messageForm.removeEventListener("submit", sendMessage);
+  }
+});
